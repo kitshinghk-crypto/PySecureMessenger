@@ -8,6 +8,7 @@ import time
 import curses
 from curses import wrapper
 import urllib3
+import json
 urllib3.disable_warnings(urllib3.exceptions.SubjectAltNameWarning)
 
 server_endpoint="https://localhost:4443"
@@ -15,6 +16,11 @@ sk = PrivateKey.generate()
 pk = sk.public_key
 user_id = -1
 isLineBreak=False
+offsetY=2
+offsetX=3
+chatUiWidth=60
+chatUiHeight=40
+maxMsgLen=chatUiWidth-10
 
 def random_with_N_digits(n):
     range_start = 10**(n-1)
@@ -57,6 +63,8 @@ def send_msg(sender_id, recipient_id, msg):
     response=requests.post(server_endpoint+"/sendMsg", json=msg_payload, verify='cert.pem')
     if response.text == "Fail":
         print("[MESSAGE CANNOT BE SENT]")
+        return False
+    return True
 
 def get_msg(my_id, from_id):
     getMsg_payload={"id": my_id, "from":from_id}
@@ -72,10 +80,46 @@ def print_msg(my_id, from_id, box):
             for msg in msgs["msgs"]:
                 decoded_msg = b64decode(msg)
                 decrypted_msg = box.decrypt(decoded_msg).decode('utf-8')
-                if isLineBreak:
-                    print(" ")
                 print("<"+decrypted_msg)
         time.sleep(5)
+
+def chat_render(chatbox, my_id, from_id, box):
+    global offsetX, offsetY
+    while True:
+        msgs = get_msg(my_id,from_id)
+        if msgs:
+            for msg in msgs["msgs"]:
+                decoded_msg = b64decode(msg)
+                decrypted_msg = box.decrypt(decoded_msg).decode('utf-8')
+                chatbox.addstr(offsetY,offsetX,"<"+decrypted_msg,curses.color_pair(2))
+                offsetY+=1
+                chatbox.refresh(max(0,offsetY-chatUiHeight),0, 0,0, chatUiHeight, chatUiWidth)
+        time.sleep(5)
+
+def chat_main(stdscr,mybox,recipent_id):
+    global offsetX, offsetY
+    curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+    chatbox = curses.newpad(1000, chatUiWidth)
+    chatbox.box()
+    chatbox.refresh(0,0,0,0,chatUiHeight, chatUiWidth)
+    t = Thread(target=chat_render, args=(chatbox, user_id, recipent_id, mybox,))
+    t.start()
+    curses.echo()
+    while True:
+        textbox = curses.newwin(5, chatUiWidth, 42, 0)
+        textbox.box()
+        textbox.addstr(2,5,"msg>")
+        textbox.addstr(3,5,"Your ID: "+user_id +" Recipent ID:"+recipent_id)
+        textbox.refresh()
+        message = textbox.getstr(2,10,maxMsgLen)
+        if message:
+            encrypted_message = mybox.encrypt(message)
+            encoded_message = b64encode(encrypted_message).decode("ascii")
+            if send_msg(user_id, recipent_id, encoded_message):
+                chatbox.addstr(offsetY,offsetX,b">"+message,curses.color_pair(1))
+                offsetY+=1
+                chatbox.refresh(max(0,offsetY-chatUiHeight),0, 0,0, chatUiHeight, chatUiWidth)
 
 def main():
     global user_id
@@ -83,16 +127,9 @@ def main():
     recipent_id = recipent["id"]
     recipent_pk = PublicKey(b64decode(recipent["pk"]))
     mybox = Box(sk, recipent_pk)
-    t = Thread(target=print_msg, args=(user_id, recipent_id, mybox,))
-    t.start()
-    while True:
-        isLineBreak=True
-        message = input("msg>")
-        isLineBreak=False
-        if message:
-            encrypted_message = mybox.encrypt(message.encode("utf-8"))
-            encoded_message = b64encode(encrypted_message).decode("ascii")
-            send_msg(user_id, recipent_id, encoded_message)
+    wrapper(chat_main,mybox,recipent_id)
+    #t = Thread(target=print_msg, args=(user_id, recipent_id, mybox,))
+    #t.start()
 
 if __name__ == '__main__':
     main()
