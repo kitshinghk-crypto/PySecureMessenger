@@ -16,4 +16,7 @@ Enter your recipient ID:
 ```
 The client return a one-time user id to the users when the client program starts. Give the ID to the intented recipient and start the conversation.
 
-![screenshot](psm_screenshot.png)
+<span>
+<img src="https://github.com/kitshinghk-crypto/PySecureMessenger/blob/master/psm_screenshot.png?raw=true" alt="Your image title" width="300"/>
+<img src="https://github.com/kitshinghk-crypto/PySecureMessenger/blob/master/psm_screenshot_2.png?raw=true" alt="Your image title" width="300"/>
+</span>
