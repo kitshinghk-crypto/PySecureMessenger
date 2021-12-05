@@ -31,7 +31,7 @@ class PsmHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(bytes("alive", "utf-8"))
 
     # POST /getMsg
-    # param: {"id":"123", "from":"456"}
+    # param: {"id":"123", "from":"456", "sign":"signature"}
     def do_getMsg(self):
         content_len = int(self.headers.get('Content-Length'))
         post_body = self.rfile.read(content_len)
@@ -60,7 +60,7 @@ class PsmHTTPRequestHandler(BaseHTTPRequestHandler):
 
 
     # POST /sendMsg
-    # param: {"sender_id":"123", "recipient_id":"456", "msg":"encrypted message"}
+    # param: {"sender_id":"123", "recipient_id":"456", "msg":"encrypted message", "sign":"signature"}
     def do_sendMsg(self):
         content_len = int(self.headers.get('Content-Length'))
         post_body = self.rfile.read(content_len)
