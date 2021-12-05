@@ -14,7 +14,7 @@ Run the client script, and it will return the following:
 Your ID: 12077
 Enter your recipient ID:
 ```
-The client return a one-time user id to the users when the client program starts. The public and private keys pair is generated on the fly and only used once in a converation. The keys are only stored in the program memory. Give the ID to the intented recipient and start the conversation.
+The client return a one-time user id to the users when the client program starts. The public and private keys pair is generated on the fly and is only used in a converation. The keys are stored in the program memory. Give the ID to the recipient and start the conversation.
 
 <span>
 <img src="https://github.com/kitshinghk-crypto/PySecureMessenger/blob/master/psm_screenshot.png?raw=true" alt="Your image title" width="300"/>
