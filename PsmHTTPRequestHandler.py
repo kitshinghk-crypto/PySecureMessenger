@@ -1,4 +1,8 @@
 from http.server import BaseHTTPRequestHandler
+from nacl.signing import SigningKey, VerifyKey
+from nacl.encoding import Base64Encoder
+from time import time
+import struct
 from random import randint
 import json
 
@@ -35,12 +39,19 @@ class PsmHTTPRequestHandler(BaseHTTPRequestHandler):
         print(getMsg_info)
         user_id = getMsg_info["id"]
         from_id = getMsg_info["from"]
+        signature = getMsg_info["sign"]
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         print(self.users)
         print(self.mailbox)
         if user_id in self.users and user_id in self.mailbox and from_id in self.mailbox[user_id]:
+            verify_key = VerifyKey(self.users[user_id]["vk"].encode("ascii"), encoder=Base64Encoder)
+            verify_msg = verify_key.verify(signature.encode("ascii"), encoder=Base64Encoder)
+            sign_time = struct.unpack(">i", verify_msg)[0]
+            if time()-sign_time>30:
+                print(f"SIGNATURE EXPIRED: user={user_id}")
+                pass
             msgs = {"msgs": self.mailbox[user_id][from_id]}
             self.mailbox[user_id][from_id] = []
             self.wfile.write(json.dumps(msgs).encode('utf-8'))

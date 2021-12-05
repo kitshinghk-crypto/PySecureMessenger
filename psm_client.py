@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 from nacl.public import PrivateKey, Box, PublicKey
+from nacl.signing import SigningKey, VerifyKey
+from nacl.encoding import Base64Encoder
 import requests
 from random import randint
 from base64 import b64encode, b64decode
@@ -8,12 +10,15 @@ import time
 import curses
 from curses import wrapper
 import urllib3
+import struct
 import json
 urllib3.disable_warnings(urllib3.exceptions.SubjectAltNameWarning)
 
 server_endpoint="https://localhost:4443"
-sk = PrivateKey.generate()
-pk = sk.public_key
+signKey = SigningKey.generate()
+vk = signKey.verify_key
+sk = signKey.to_curve25519_private_key()
+pk = vk.to_curve25519_public_key()
 user_id = -1
 isLineBreak=False
 offsetY=2
@@ -30,7 +35,7 @@ def random_with_N_digits(n):
 def init_id():
     global user_id 
     user_id = str(random_with_N_digits(5))
-    user_info = {"id":user_id, "pk":b64encode(pk.__bytes__()).decode("ascii")}
+    user_info = {"id":user_id, "pk":b64encode(pk.__bytes__()).decode("ascii"), "vk": b64encode(vk.__bytes__()).decode("ascii")}
     response=requests.post(server_endpoint+"/start", json=user_info, verify='cert.pem')
     return response.text
 
@@ -67,7 +72,7 @@ def send_msg(sender_id, recipient_id, msg):
     return True
 
 def get_msg(my_id, from_id):
-    getMsg_payload={"id": my_id, "from":from_id}
+    getMsg_payload={"id": my_id, "from":from_id, "sign": signKey.sign(struct.pack(">i", int(time.time())), encoder=Base64Encoder).decode("ascii")}
     response=requests.post(server_endpoint+"/getMsg", json=getMsg_payload, verify='cert.pem')
     if response.text == "Fail":
         return
