@@ -1,5 +1,5 @@
 # PySecureMessenger
-A python secure messenger developed using pynacl. The messenger consists of the server module and the client module. A certificate and key files should be provided to the server scirpt for TLS support. The messengers uses end-to-end encryption, which means the plaintext message is encrypted and the ciphertext message is decrypted in the client side. The client use pynacl Curve25519 for public key encryption and Ed25519 for authenication. The server does not store messages in plaintext. Once the messages in the mailbox is deliveried to the client, the messenges in the server are removed. 
+A python secure messenger developed using [PyNaCl](https://pynacl.readthedocs.io/en/latest/). The messenger consists of the server module and the client module. A certificate and key files should be provided to the server scirpt for TLS support. The messengers uses end-to-end encryption, which means the plaintext message is encrypted and the ciphertext message is decrypted in the client side. The client use PyNaCl to perform Curve25519 public key encryption and Ed25519 authenication. The server does not store messages in plaintext. Once the messages in the mailbox is deliveried to the client, the messenges in the server are removed. 
 
 ## Server
 The server side has 2 purposes:
