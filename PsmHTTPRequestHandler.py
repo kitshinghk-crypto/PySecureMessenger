@@ -36,22 +36,20 @@ class PsmHTTPRequestHandler(BaseHTTPRequestHandler):
         content_len = int(self.headers.get('Content-Length'))
         post_body = self.rfile.read(content_len)
         getMsg_info = json.loads(post_body.decode('utf-8'))
-        print(getMsg_info)
         user_id = getMsg_info["id"]
         from_id = getMsg_info["from"]
         signature = getMsg_info["sign"]
+        verify_key = VerifyKey(self.users[user_id]["vk"].encode("ascii"), encoder=Base64Encoder)
+        verify_msg = verify_key.verify(signature.encode("ascii"), encoder=Base64Encoder)
+        sign_time = struct.unpack(">i", verify_msg)[0]
+        if time()-sign_time>30:
+            print(f"SIGNATURE EXPIRED: user={user_id}")
+            return
+        self.users[user_id]["lastActivity"] = time()
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        print(self.users)
-        print(self.mailbox)
         if user_id in self.users and user_id in self.mailbox and from_id in self.mailbox[user_id]:
-            verify_key = VerifyKey(self.users[user_id]["vk"].encode("ascii"), encoder=Base64Encoder)
-            verify_msg = verify_key.verify(signature.encode("ascii"), encoder=Base64Encoder)
-            sign_time = struct.unpack(">i", verify_msg)[0]
-            if time()-sign_time>30:
-                print(f"SIGNATURE EXPIRED: user={user_id}")
-                pass
             msgs = {"msgs": self.mailbox[user_id][from_id]}
             self.mailbox[user_id][from_id] = []
             self.wfile.write(json.dumps(msgs).encode('utf-8'))
@@ -78,7 +76,7 @@ class PsmHTTPRequestHandler(BaseHTTPRequestHandler):
             sign_time = struct.unpack(">i", verify_msg)[0]
             if time()-sign_time>30:
                 print(f"SIGNATURE EXPIRED: user={sender_id}")
-                pass
+                return
             if recipient_id not in self.mailbox:
                 self.mailbox[recipient_id]={}
             if sender_id not in self.mailbox[recipient_id]:
@@ -107,8 +105,8 @@ class PsmHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_start(self):
         content_len = int(self.headers.get('Content-Length'))
         post_body = self.rfile.read(content_len)
-        print(post_body)
         user_info = json.loads(post_body.decode('utf-8'))
+        user_info["lastActivity"]=time()
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
