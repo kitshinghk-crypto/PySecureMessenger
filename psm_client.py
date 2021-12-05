@@ -64,7 +64,7 @@ def init_conversation():
     return get_recipientId()
 
 def send_msg(sender_id, recipient_id, msg):
-    msg_payload={"sender_id":sender_id, "recipient_id": recipient_id, "msg": msg}
+    msg_payload={"sender_id":sender_id, "recipient_id": recipient_id, "msg": msg, "sign": signKey.sign(struct.pack(">i", int(time.time())), encoder=Base64Encoder).decode("ascii")}
     response=requests.post(server_endpoint+"/sendMsg", json=msg_payload, verify='cert.pem')
     if response.text == "Fail":
         print("[MESSAGE CANNOT BE SENT]")

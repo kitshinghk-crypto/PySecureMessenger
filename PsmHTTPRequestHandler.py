@@ -68,10 +68,17 @@ class PsmHTTPRequestHandler(BaseHTTPRequestHandler):
         sender_id = str(msg_info["sender_id"])
         recipient_id = str(msg_info["recipient_id"])
         encrypted_msg = msg_info["msg"]
+        signature = msg_info["sign"]
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         if sender_id in self.users and recipient_id in self.users and sender_id!=recipient_id:
+            verify_key = VerifyKey(self.users[sender_id]["vk"].encode("ascii"), encoder=Base64Encoder)
+            verify_msg = verify_key.verify(signature.encode("ascii"), encoder=Base64Encoder)
+            sign_time = struct.unpack(">i", verify_msg)[0]
+            if time()-sign_time>30:
+                print(f"SIGNATURE EXPIRED: user={sender_id}")
+                pass
             if recipient_id not in self.mailbox:
                 self.mailbox[recipient_id]={}
             if sender_id not in self.mailbox[recipient_id]:
